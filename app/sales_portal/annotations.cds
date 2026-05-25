@@ -19,7 +19,7 @@ annotate service.SalesOrders with @(
             },
             {
                 $Type: 'UI.DataField',
-                Label: 'Total Amount',
+                Label: 'Total_Amount',
                 Value: totalAmount
             },
 
