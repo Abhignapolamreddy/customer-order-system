@@ -1,0 +1,163 @@
+_schema-version: 3.3.0
+ID: customer-order-system
+description: A simple CAP project.
+version: 1.0.0
+modules:
+- name: customer-order-system-srv
+  type: javascript.nodejs
+  path: customer-order-system-srv
+  requires:
+  - name: customer-order-system-auth
+  - name: customer-order-system-db
+  - name: customer-order-system-destination
+  provides:
+  - name: srv-api
+    properties:
+      srv-url: ${default-url}
+  parameters:
+    buildpack: nodejs_buildpack
+    instances: 1
+- name: customer-order-system-db-deployer
+  type: com.sap.xs.hdi
+  path: customer-order-system-db-deployer
+  requires:
+  - name: customer-order-system-db
+  parameters:
+    buildpack: nodejs_buildpack
+- name: customer-order-system
+  type: javascript.nodejs
+  path: customer-order-system
+  requires:
+  - name: srv-api
+    group: destinations
+    properties:
+      forwardAuthToken: true
+      name: srv-api
+      url: ~{srv-url}
+  - name: customer-order-system-auth
+  - name: customer-order-system-html5-runtime
+  provides:
+  - name: app-api
+    properties:
+      app-protocol: ${protocol}
+      app-uri: ${default-uri}
+  parameters:
+    disk-quota: 256M
+    keep-existing-routes: true
+    memory: 256M
+- name: customer-order-system-app-deployer
+  type: com.sap.application.content
+  path: customer-order-system-app-deployer
+  requires:
+  - name: customer-order-system-auth
+  - name: srv-api
+  - name: customer-order-system-html5-repo-host
+    parameters:
+      config:
+        HTML5Runtime_enabled: true
+      content-target: true
+  parameters:
+    config:
+      destinations:
+      - Authentication: NoAuthentication
+        HTML5.DynamicDestination: true
+        HTML5.ForwardAuthToken: true
+        Name: srv-api
+        ProxyType: Internet
+        Type: HTTP
+        URL: ~{srv-api/srv-url}
+- name: customer-order-system-destinations
+  type: com.sap.application.content
+  requires:
+  - name: customer-order-system-auth
+    parameters:
+      service-key:
+        name: customer-order-system-auth-key
+  - name: customer-order-system-html5-repo-host
+    parameters:
+      service-key:
+        name: customer-order-system-html5-repo-host-key
+  - name: srv-api
+  - name: customer-order-system-destination
+    parameters:
+      content-target: true
+  parameters:
+    content:
+      instance:
+        destinations:
+        - Name: customer-order-system-html5-repository
+          ServiceInstanceName: customer-order-system-html5-repo-host
+          ServiceKeyName: customer-order-system-html5-repo-host-key
+          sap.cloud.service: customerordersystem.service
+        - Authentication: OAuth2UserTokenExchange
+          Name: customer-order-system-auth
+          ServiceInstanceName: customer-order-system-auth
+          ServiceKeyName: customer-order-system-auth-key
+          sap.cloud.service: customerordersystem.service
+        existing_destinations_policy: update
+resources:
+- name: customer-order-system-auth
+  type: org.cloudfoundry.managed-service
+  parameters:
+    config:
+      oauth2-configuration:
+        credential-types:
+        - binding-secret
+        - x509
+        redirect-uris:
+        - https://*~{app-api/app-uri}/**
+      role-collections:
+      - description: generated
+        name: Finance (customer-order-system ${org}-${space})
+        role-template-references:
+        - $XSAPPNAME.Finance
+      - description: generated
+        name: Administrator (customer-order-system ${org}-${space})
+        role-template-references:
+        - $XSAPPNAME.Administrator
+      - description: generated
+        name: SalesRep (customer-order-system ${org}-${space})
+        role-template-references:
+        - $XSAPPNAME.SalesRep
+      - description: generated
+        name: SalesManager (customer-order-system ${org}-${space})
+        role-template-references:
+        - $XSAPPNAME.SalesManager
+      tenant-mode: dedicated
+      xsappname: customer-order-system-${org}-${space}
+    path: ./xs-security.json
+    service: xsuaa
+    service-plan: application
+  requires:
+  - name: app-api
+- name: customer-order-system-db
+  type: com.sap.xs.hdi-container
+  parameters:
+    service: hana
+    service-plan: hdi-shared
+- name: customer-order-system-destination
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: destination
+    service-plan: lite
+  requires:
+  - name: srv-api
+- name: customer-order-system-html5-repo-host
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-plan: app-host
+- name: customer-order-system-html5-runtime
+  type: org.cloudfoundry.managed-service
+  parameters:
+    service: html5-apps-repo
+    service-plan: app-runtime
+parameters:
+  deploy_mode: html5-repo
+  enable-parallel-deployments: true
+build-parameters:
+  before-all:
+  - builder: custom
+    commands:
+    - npm ci
+    - npx cds build --production

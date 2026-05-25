@@ -1,0 +1,31 @@
+manifest-Version: 1.0
+Created-By: SAP Application Archive Builder 1.2.47
+
+Name: customer-order-system-srv/data.zip
+MTA-Module: customer-order-system-srv
+Content-Type: application/zip
+
+
+Name: customer-order-system-db-deployer/data.zip
+MTA-Module: customer-order-system-db-deployer
+Content-Type: application/zip
+
+
+Name: customer-order-system/data.zip
+MTA-Module: customer-order-system
+Content-Type: application/zip
+
+
+Name: customer-order-system-app-deployer/app/data.zip
+MTA-Module: customer-order-system-app-deployer
+Content-Type: application/zip
+
+
+Name: xs-security.json
+MTA-Resource: customer-order-system-auth
+Content-Type: application/json
+
+
+Name: META-INF/mtad.yaml
+Content-Type: text/plain
+

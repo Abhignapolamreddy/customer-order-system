@@ -1,0 +1,64 @@
+{
+  "xsappname": "customer-order-system",
+  "tenant-mode": "dedicated",
+  "oauth2-configuration": {
+    "redirect-uris": [
+      "https://*.applicationstudio.cloud.sap/**",
+      "https://port5000-workspaces-ws-bnef8.us10.trial.applicationstudio.cloud.sap/login/callback",
+      "https://*.cfapps.us10-001.hana.ondemand.com/**"
+    ]
+  },
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.Finance",
+      "description": "Finance"
+    },
+    {
+      "name": "$XSAPPNAME.Administrator",
+      "description": "Administrator"
+    },
+    {
+      "name": "$XSAPPNAME.SalesRep",
+      "description": "SalesRep"
+    },
+    {
+      "name": "$XSAPPNAME.SalesManager",
+      "description": "SalesManager"
+    }
+  ],
+  "attributes": [],
+  "role-templates": [
+    {
+      "name": "Finance",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.Finance"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "Administrator",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.Administrator"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "SalesRep",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.SalesRep"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "SalesManager",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.SalesManager"
+      ],
+      "attribute-references": []
+    }
+  ]
+}
