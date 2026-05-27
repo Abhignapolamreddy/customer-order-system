@@ -1,0 +1,11 @@
+ID,customerCode,name,email,phone,creditLimit,billingAddress_street,billingAddress_city,billingAddress_state,billingAddress_postalCode,billingAddress_country,shippingAddress_street,shippingAddress_city,shippingAddress_state,shippingAddress_postalCode,shippingAddress_country
+11111111-1111-1111-1111-111111111111,CUST001,Rahul Sharma,rahul.sharma@gmail.com,9876543210,100000.00,12 MG Road,Bangalore,Karnataka,560001,India,Hitech City,Hyderabad,Telangana,500081,India
+22222222-2222-2222-2222-222222222222,CUST002,Priya Krishna,priya.krishna@gmail.com,9876543211,750000.00,Anna Salai,Chennai,Tamil Nadu,600001,India,RS Puram,Coimbatore,Tamil Nadu,641001,India
+33333333-3333-3333-3333-333333333333,CUST003,Amit Verma,amit.verma@gmail.com,9876543212,1500000.00,Marine Drive,Mumbai,Maharashtra,400001,India,Baner Road,Pune,Maharashtra,411001,India
+44444444-4444-4444-4444-444444444444,CUST004,Neha Singh,neha.singh@gmail.com,9876543213,900000.00,Connaught Place,Delhi,Delhi,110001,India,Sector 62,Noida,Uttar Pradesh,201301,India
+55555555-5555-5555-5555-555555555555,CUST005,Sourav Das,sourav.das@gmail.com,9876543214,850000.00,Park Street,Kolkata,West Bengal,700001,India,GT Road,Howrah,West Bengal,711101,India
+66666666-6666-6666-6666-666666666666,CUST006,Kiran Reddy,kiran.reddy@gmail.com,9876543215,1200000.00,Banjara Hills,Hyderabad,Telangana,500001,India,Paradise Circle,Secunderabad,Telangana,500003,India
+77777777-7777-7777-7777-777777777777,CUST007,Mehul Patel,mehul.patel@gmail.com,9876543216,950000.00,CG Road,Ahmedabad,Gujarat,380001,India,Ring Road,Surat,Gujarat,395003,India
+88888888-8888-8888-8888-888888888888,CUST008,Anjali Sharma,anjali.sharma@gmail.com,9876543217,680000.00,MI Road,Jaipur,Rajasthan,302001,India,Fatehpura,Udaipur,Rajasthan,313001,India
+99999999-9999-9999-9999-999999999999,CUST009,Vikas Mishra,vikas.mishra@gmail.com,9876543218,720000.00,Hazratganj,Lucknow,Uttar Pradesh,226001,India,Mall Road,Kanpur,Uttar Pradesh,208001,India
+aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa,CUST010,Sai Kumar,sai.kumar@gmail.com,9876543219,1100000.00,Beach Road,Visakhapatnam,Andhra Pradesh,530001,India,Benz Circle,Vijayawada,Andhra Pradesh,520001,India

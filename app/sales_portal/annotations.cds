@@ -28,6 +28,7 @@ annotate service.SalesOrders with @(
                 Label: 'Customer',
                 Value: customer_ID
             },
+        
             {
                 $Type: 'UI.DataField',
                 Label: 'Status',
@@ -93,6 +94,11 @@ annotate service.SalesOrders with @(
             Value: customer_ID
         },
         {
+                $Type: 'UI.DataField',
+                Label: 'Customer Name',
+                Value: customer.name
+            },
+        {
             $Type      : 'UI.DataField',
             Label      : 'Status',
             Value      : status,
@@ -125,7 +131,14 @@ annotate service.SalesOrders with @(
                                 {$Path: 'status'},
                                 'DRAFT'
                             ]},
-                            5
+                            5,
+                            {$If: [
+                            {$Eq: [
+                                {$Path: 'status'},
+                                'PENDING'
+                            ]},
+                            2
+                            ]}
                         ]}
                         ]}
                     ]}
@@ -176,6 +189,7 @@ annotate service.OrderItems with @(UI.LineItem: [
         Label: 'Unit Price',
         Value: unitPrice
     },
+    
 
     {
         $Type: 'UI.DataField',
@@ -190,25 +204,59 @@ annotate service.OrderItems with @(UI.LineItem: [
 ]);
 
 annotate service.SalesOrders with {
-    customer @Common.ValueList: {
-        $Type         : 'Common.ValueListType',
-        CollectionPath: 'Customers',
-        Parameters    : [
-            {
-                $Type            : 'Common.ValueListParameterInOut',
-                LocalDataProperty: customer_ID,
-                ValueListProperty: 'ID'
-            },
-            {
-                $Type            : 'Common.ValueListParameterDisplayOnly',
-                ValueListProperty: 'customerCode'
-            },
-            {
-                $Type            : 'Common.ValueListParameterDisplayOnly',
-                ValueListProperty: 'name'
-            }
-        ]
-    }
+  customer @Common.ValueList: {
+    CollectionPath: 'Customers',
+    Parameters: [
+      {
+        $Type: 'Common.ValueListParameterInOut',
+        LocalDataProperty: customer_ID,
+        ValueListProperty: 'ID'
+      },
+      {
+        $Type: 'Common.ValueListParameterInOut',
+        LocalDataProperty: creditLimit,
+        ValueListProperty: 'creditLimit'
+      },
+      
+      {
+        $Type: 'Common.ValueListParameterInOut',
+        LocalDataProperty: name,
+        ValueListProperty: 'name'
+      },
+      
+      
+      {
+        $Type: 'Common.ValueListParameterInOut',
+        LocalDataProperty: customerCode,
+        ValueListProperty: 'customerCode'
+      },
+      {
+        $Type: 'Common.ValueListParameterOut',
+        LocalDataProperty: shippingAddress_street,
+        ValueListProperty: 'shippingAddress_street'
+      },
+      {
+        $Type: 'Common.ValueListParameterOut',
+        LocalDataProperty: shippingAddress_city,
+        ValueListProperty: 'shippingAddress_city'
+      },
+      {
+        $Type: 'Common.ValueListParameterOut',
+        LocalDataProperty: shippingAddress_state,
+        ValueListProperty: 'shippingAddress_state'
+      },
+      {
+        $Type: 'Common.ValueListParameterOut',
+        LocalDataProperty: shippingAddress_postalCode,
+        ValueListProperty: 'shippingAddress_postalCode'
+      },
+      {
+        $Type: 'Common.ValueListParameterOut',
+        LocalDataProperty: shippingAddress_country,
+        ValueListProperty: 'shippingAddress_country'
+      }
+    ]
+  }
 };
 
 annotate service.OrderItems with {
@@ -223,7 +271,17 @@ annotate service.OrderItems with {
             },
             {
                 $Type            : 'Common.ValueListParameterDisplayOnly',
+                LocalDataProperty: name,
                 ValueListProperty: 'name'
+            },
+            {
+                $Type            : 'Common.ValueListParameterDisplayOnly',
+                ValueListProperty: 'stockQty'
+            },
+            {
+                $Type            : 'Common.ValueListParameterDisplayOnly',
+                 LocalDataProperty: unitPrice,
+                ValueListProperty: 'unitPrice'
             }
         ]
     };
@@ -323,21 +381,53 @@ annotate service.OrderItems with {
     lineTotal @Common.FieldControl: #ReadOnly;
 };
 
-annotate service.OrderItems with @(Capabilities.UpdateRestrictions: {Updatable: {$edmJson: {$Eq: [
-    {$Path: 'salesOrder/status'},
-    'DRAFT'
-]}}});
+annotate service.SalesOrders with @(Capabilities.UpdateRestrictions: {
+    Updatable: {
+        $edmJson: {
+            $Or: [
+                {
+                    $Eq: [
+                        {$Path: 'status'},
+                        'DRAFT'
+                    ]
+                },
+                {
+                    $Eq: [
+                        {$Path: 'status'},
+                        'PENDING'
+                    ]
+                }
+            ]
+        }
+    }
+});
 
-annotate service.SalesOrders with @(Capabilities.UpdateRestrictions: {Updatable: {$edmJson: {$Eq: [
-    {$Path: 'status'},
-    'DRAFT'
-]}}});
+annotate service.OrderItems with @(Capabilities.UpdateRestrictions: {
+    Updatable: {
+        $edmJson: {
+            $Or: [
+                {
+                    $Eq: [
+                        {$Path: 'salesOrder/status'},
+                        'DRAFT'
+                    ]
+                },
+                {
+                    $Eq: [
+                        {$Path: 'salesOrder/status'},
+                        'PENDING'
+                    ]
+                }
+            ]
+        }
+    }
+});
 
 annotate service.SalesOrders with actions {
 
     confirmOrder @Core.OperationAvailable: {$edmJson: {$Eq: [
         {$Path: 'status'},
-        'DRAFT'
+        'PENDING'
     ]}};
 
     shipOrder    @Core.OperationAvailable: {$edmJson: {$Eq: [
@@ -353,7 +443,7 @@ annotate service.SalesOrders with actions {
     cancelOrder  @Core.OperationAvailable: {$edmJson: {$Or: [
         {$Eq: [
             {$Path: 'status'},
-            'DRAFT'
+            'PENDING'
         ]},
         {$Eq: [
             {$Path: 'status'},

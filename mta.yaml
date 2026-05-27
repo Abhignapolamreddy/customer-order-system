@@ -28,7 +28,7 @@ modules:
       - name: customer-order-system-auth
       - name: customer-order-system-db
       - name: customer-order-system-destination
-
+      - name: alert-inst
   - name: customer-order-system-db-deployer
     type: hdb
     path: gen/db
@@ -201,6 +201,11 @@ resources:
     parameters:
       service: hana
       service-plan: hdi-shared
+  - name: alert-inst
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: alert-notification
+      service-plan: standard
   - name: customer-order-system-destination
     type: org.cloudfoundry.managed-service
     parameters:

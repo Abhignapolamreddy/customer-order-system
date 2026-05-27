@@ -28,6 +28,7 @@ service InvoiceService {
             }
         ]
         action markAsPaid(paymentRef : String);
+        action markOverdueInvoices() returns String;
 
     };
 

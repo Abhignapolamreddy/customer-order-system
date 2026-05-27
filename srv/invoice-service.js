@@ -37,5 +37,32 @@ module.exports=cds.service.impl(async function(){
         const overDueInvoices=await SELECT.from(Invoices).where({dueDate:{'<':overDue},status:'UNPAID'})
         return overDueInvoices;
     })
+    this.on('markOverdueInvoices', async () => {
+        const now = new Date();
+
+        const overdueInvoices = await SELECT
+            .from('Invoice')
+            .where({
+                status: 'UNPAID',
+                dueDate: { '<': now }
+            });
+
+        for (const invoice of overdueInvoices) {
+            await UPDATE('Invoice')
+                .set({
+                    status: 'OVERDUE'
+                })
+                .where({
+                    ID: invoice.ID
+                });
+
+            sendAlert(
+                `Invoice ${invoice.ID} is overdue`,
+                'INVOICE_OVERDUE'
+            ).catch(console.error);
+        }
+
+        return `Processed ${overdueInvoices.length} overdue invoices`;
+    });
 
 })

@@ -1,12 +1,13 @@
 const cds = require('@sap/cds');
 const { SELECT, UPDATE } = require('@sap/cds/lib/ql/cds-ql');
+const { sendAlert } = require('./utils/alert');
 
 module.exports = cds.service.impl(async function () {
     const { Customers, Products, SalesOrders, OrderItems } = this.entities;
 
     this.before('confirmOrder', SalesOrders, async (req) => {
         const orderID = req.params[0].ID;
-        
+
         const order = await SELECT.one
             .from(SalesOrders)
             .where({ ID: orderID });
@@ -15,8 +16,8 @@ module.exports = cds.service.impl(async function () {
             req.error(404, 'Order not found');
         }
 
-        if (order.status !== 'DRAFT') {
-            req.error(400, 'Only draft orders can be confirmed');
+        if (order.status !== 'PENDING') {
+            req.error(400, 'Only pending orders can be confirmed');
         }
 
         const customer = await SELECT.one
@@ -27,7 +28,12 @@ module.exports = cds.service.impl(async function () {
             req.error(404, 'Customer not found');
         }
 
-        if (order.totalAmount > customer.creditLimit) {
+        if (Number(order.totalAmount) > Number(customer.creditLimit)) {
+             sendAlert(
+                `Credit limit exceeded for order ${orderID}`,
+                "CREDIT_LIMIT",
+                "WARNING"
+            ).catch(console.error);
             req.error(400, 'Customer Credit Limit Exceeded');
         }
 
@@ -45,6 +51,11 @@ module.exports = cds.service.impl(async function () {
             }
 
             if (product.stockQty < item.quantity) {
+                 sendAlert(
+                    `Insufficient stock for ${product.name}. Required: ${item.quantity}, Available: ${product.stockQty}`,
+                    'LOW_STOCK',
+                    'CRITICAL'
+                ).catch(console.error);;
                 req.error(400, `Insufficient stock for ${product.name}`);
             }
         }
@@ -61,7 +72,7 @@ module.exports = cds.service.impl(async function () {
         const customer = await SELECT.one
             .from(Customers)
             .where({ ID: order.customer_ID });
-            
+
 
         for (const item of items) {
             const product = await SELECT.one
@@ -75,14 +86,17 @@ module.exports = cds.service.impl(async function () {
                 .where({ ID: item.product_ID });
         }
         await UPDATE(Customers)
-        .set({
-            creditLimit: customer.creditLimit - order.totalAmount
-        })
-        .where({ ID: order.customer_ID });
+            .set({
+                creditLimit: customer.creditLimit - order.totalAmount
+            })
+            .where({ ID: order.customer_ID });
         await UPDATE(SalesOrders)
             .set({ status: 'CONFIRMED' })
             .where({ ID: orderID });
-
+         sendAlert(
+            `Order ${orderID} confirmed successfully`,
+            "ORDER_CONFIRMED"
+        ).catch(console.error);
         return SELECT.one
             .from(SalesOrders)
             .where({ ID: orderID });
@@ -104,6 +118,10 @@ module.exports = cds.service.impl(async function () {
         await UPDATE(SalesOrders)
             .set({ status: 'SHIPPED' })
             .where({ ID: orderID });
+         sendAlert(
+            `Order ${orderID} shipped successfully`,
+            "ORDER_SHIPPED"
+        ).catch(console.error);
 
         return SELECT.one.from(SalesOrders).where({ ID: orderID });
     });
@@ -123,6 +141,10 @@ module.exports = cds.service.impl(async function () {
         await UPDATE(SalesOrders)
             .set({ status: 'DELIVERED' })
             .where({ ID: orderID });
+         sendAlert(
+            `Order ${orderID} delivered successfully`,
+            "ORDER_DELIVERED"
+        ).catch(console.error);
 
         return SELECT.one.from(SalesOrders).where({ ID: orderID });
     });
@@ -172,18 +194,22 @@ module.exports = cds.service.impl(async function () {
                 status: 'CANCELLED'
             })
             .where({ ID: orderID });
-            if (order.status !== 'DRAFT') {
-        const customer = await SELECT.one
-            .from(Customers)
-            .where({ ID: order.customer_ID });
+         sendAlert(
+            `Order ${orderID} cancelled. Reason: ${reason || 'Not specified'}`,
+            "ORDER_CANCELLED"
+        ).catch(console.error);
+        if (order.status !== 'DRAFT') {
+            const customer = await SELECT.one
+                .from(Customers)
+                .where({ ID: order.customer_ID });
 
-        await UPDATE(Customers)
-    .set({
-        creditLimit: Number(
-            ((customer.creditLimit || 0) - (order.totalAmount || 0)).toFixed(2)
-        )
-    })
-    }
+            await UPDATE(Customers)
+                .set({
+                    creditLimit: Number(
+                        ((customer.creditLimit || 0) - (order.totalAmount || 0)).toFixed(2)
+                    )
+                })
+        }
 
         return SELECT.one
             .from(SalesOrders)
@@ -221,61 +247,61 @@ module.exports = cds.service.impl(async function () {
         req.data.totalAmount = totalAmount;
     });
     this.before('PATCH', 'OrderItems.drafts', async (req) => {
-    const existing = await SELECT.one(req.subject);
+        const existing = await SELECT.one(req.subject);
 
-    const salesOrder_ID = req.data.salesOrder_ID ?? existing?.salesOrder_ID;
+        const salesOrder_ID = req.data.salesOrder_ID ?? existing?.salesOrder_ID;
 
-    if (!salesOrder_ID) return;
+        if (!salesOrder_ID) return;
 
-    const order = await SELECT.one
-        .from(SalesOrders.drafts)
-        .where({ ID: salesOrder_ID });
+        const order = await SELECT.one
+            .from(SalesOrders.drafts)
+            .where({ ID: salesOrder_ID });
 
-    if (!order) {
-        req.error(404, 'Sales order not found');
-    }
+        if (!order) {
+            req.error(404, 'Sales order not found');
+        }
 
-    if (order.status !== 'DRAFT') {
-        req.error(400, 'Order items can only be edited in DRAFT status');
-    }
+        if (order.status !== 'PENDING' && order.status !== 'DRAFT') {
+            req.error(400, 'Order items can only be edited in DRAFT status');
+        }
 
-    const product_ID = req.data.product_ID ?? existing?.product_ID;
-    const quantity = req.data.quantity ?? existing?.quantity ?? 0;
-    const discount = req.data.discount ?? existing?.discount ?? 0;
+        const product_ID = req.data.product_ID ?? existing?.product_ID;
+        const quantity = req.data.quantity ?? existing?.quantity ?? 0;
+        const discount = req.data.discount ?? existing?.discount ?? 0;
 
-    if (!product_ID) return;
+        if (!product_ID) return;
 
-    const product = await SELECT.one
-        .from(Products)
-        .where({ ID: product_ID });
+        const product = await SELECT.one
+            .from(Products)
+            .where({ ID: product_ID });
 
-    if (!product) {
-        req.error(404, 'Product not found');
-    }
+        if (!product) {
+            req.error(404, 'Product not found');
+        }
 
-    req.data.unitPrice = product.unitPrice;
+        req.data.unitPrice = product.unitPrice;
 
-    req.data.lineTotal = Number(
-        ((quantity * product.unitPrice) - discount).toFixed(2)
-    );
+        req.data.lineTotal = Number(
+            ((quantity * product.unitPrice) - discount).toFixed(2)
+        );
 
-    const items = await SELECT
-        .from(OrderItems.drafts)
-        .where({ salesOrder_ID });
+        const items = await SELECT
+            .from(OrderItems.drafts)
+            .where({ salesOrder_ID });
 
-    let totalAmount = req.data.lineTotal;
+        let totalAmount = req.data.lineTotal;
 
-    for (const item of items) {
-        if (item.ID === req.data.ID) continue;
-        totalAmount += item.lineTotal || 0;
-    }
+        for (const item of items) {
+            if (item.ID === req.data.ID) continue;
+            totalAmount += item.lineTotal || 0;
+        }
 
-    await UPDATE(SalesOrders.drafts)
-        .set({
-            totalAmount: Number(totalAmount.toFixed(2))
-        })
-        .where({ ID: salesOrder_ID });
-});
+        await UPDATE(SalesOrders.drafts)
+            .set({
+                totalAmount: Number(totalAmount.toFixed(2))
+            })
+            .where({ ID: salesOrder_ID });
+    });
 
     this.before('DELETE', 'OrderItems.drafts', async (req) => {
         const existing = await SELECT.one(req.subject);
@@ -289,7 +315,7 @@ module.exports = cds.service.impl(async function () {
         let totalAmount = 0;
 
         for (const item of items) {
-            if (item.ID === existing.ID) continue; 
+            if (item.ID === existing.ID) continue;
             totalAmount += item.lineTotal || 0;
         }
 
@@ -309,11 +335,25 @@ module.exports = cds.service.impl(async function () {
             salesOrder_ID: order.ID
         });
     });
-   this.before('CREATE', 'SalesOrders', async (req) => {
-   const customer = await SELECT.one.from(Customers)
-      .where({ ID: req.data.customer_ID });
 
-   //req.data.billingAddress = customer.billingAddress;
-   req.data.shippingAddress = customer.shippingAddress;
+   
+   this.after('SAVE', 'SalesOrders.drafts', async (data) => {
+    await UPDATE(SalesOrders)
+        .set({
+            status: 'PENDING'
+        })
+        .where({
+            ID: data.ID
+        });
 });
+this.before('SAVE', 'SalesOrders', async (req) => {
+    const items = await SELECT.from(OrderItems.drafts)
+        .where({ salesOrder_ID: req.data.ID });
+
+    if (!items || items.length === 0) {
+        req.error(400, 'At least one order item is required');
+    }
+});
+    
 })
+

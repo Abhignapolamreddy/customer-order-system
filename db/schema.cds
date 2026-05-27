@@ -1,6 +1,7 @@
 namespace customer.order.db;
 using{managed} from '@sap/cds/common';
 
+
 entity Customer{
     key ID: UUID;
     customerCode:String;
@@ -38,9 +39,9 @@ entity SalesOrder:managed{
 entity OrderItem:managed{
     key ID: UUID;
     quantity: Integer not null;
-    unitPrice: Decimal(18,2) ;
+    unitPrice: Decimal(18,2)default 0.00 ;
     discount: Decimal(18,2) default 0;
-    lineTotal: Decimal(18,2);
+    lineTotal: Decimal(18,2)default 0.00;
     salesOrder:Association to SalesOrder;
     currency : String(3) default 'INR';
     product:Association to Products;
@@ -67,6 +68,7 @@ type Address{
 
 type OrderStatus: String enum {
     DRAFT;
+    PENDING;    
     CONFIRMED;
     SHIPPED;
     DELIVERED;

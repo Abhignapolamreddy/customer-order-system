@@ -2,8 +2,10 @@ using { customer.order.db as db } from '../db/schema';
 
 service OrderService {
 
+
     entity Customers as projection on db.Customer;
 
+   
     entity Products as projection on db.Products;
 
     @restrict: [
